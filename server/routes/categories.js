@@ -17,6 +17,6 @@ app.post('/category', isAuth, (req, res) => {
             ok: true,
             category: newCategory
         });
-    })
+    });
 });
 module.exports = app;

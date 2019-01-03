@@ -1,0 +1,20 @@
+{
+    "name": "cecytea-backend",
+    "version": "1.0.0",
+    "description": "CECyTEA Backend for tests simulation",
+    "main": "server/server.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Orlando Romo",
+    "license": "ISC",
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "body-parser": "^1.18.3",
+        "express": "^4.16.4",
+        "express-fileupload": "^1.1.1-alpha.1",
+        "jsonwebtoken": "^8.4.0",
+        "mongoose": "^5.4.1",
+        "mongoose-unique-validator": "^2.0.2"
+    }
+}

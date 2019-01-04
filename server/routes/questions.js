@@ -11,7 +11,12 @@ app.use(fileUpload());
 
 //Questions GET
 app.get('/question', [isAuth], (req, res) => {
-
+    Question.findRandom({}, 'questionDescription options imgs correctOption', (err, questionsDB) => {
+        return res.status(200).json({
+            ok: true,
+            questionsDB
+        })
+    });
 })
 
 //Questions POST Method

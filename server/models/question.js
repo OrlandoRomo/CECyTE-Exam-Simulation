@@ -19,6 +19,5 @@ let questionSchema = new Schema({
 questionSchema.plugin(uniqueValidator, {
     message: '{PATH} debe de ser único'
 });
-
 questionSchema.plugin(random);
 module.exports = mongoose.model('Question', questionSchema);

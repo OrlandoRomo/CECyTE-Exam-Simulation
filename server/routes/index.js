@@ -1,16 +1,14 @@
 const express = require('express');
 const app = express();
-const path = require('path');
-const bodyParser = require('body-parser');
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 //User and Manager routes
-app.use(require('./user'));
 app.use(require('./manager'));
-
+app.use(require('./user'));
+//Login for User and Manager
+app.use(require('./login'));
 //Category routes
 app.use(require('./categories'));
-
 //Questions routes
 app.use(require('./questions'));
+//Test routes 
+app.use(require('./test'));
 module.exports = app;

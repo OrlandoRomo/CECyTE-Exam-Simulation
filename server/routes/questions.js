@@ -10,8 +10,12 @@ const fs = require('fs');
 app.use(fileUpload());
 
 //Questions GET
-app.get('/question', [isAuth], (req, res) => {
+app.get('/question', isAuth, (req, res) => {
     Question.findRandom({}, 'questionDescription options imgs correctOption', (err, questionsDB) => {
+        if (err) return res.status(500).json({
+            ok: false,
+            err
+        })
         return res.status(200).json({
             ok: true,
             questionsDB
@@ -20,7 +24,7 @@ app.get('/question', [isAuth], (req, res) => {
 })
 
 //Questions POST Method
-app.post('/question', [isAuth], (req, res) => {
+app.post('/question', isAuth, (req, res) => {
     let requestFiles = [];
     let body = req.body;
     if (req.files !== null) {
@@ -46,7 +50,7 @@ app.post('/question', [isAuth], (req, res) => {
 });
 
 //Questions PUT except the images for the question
-app.put('/question/:id', [isAuth], (req, res) => {
+app.put('/question/:id', isAuth, (req, res) => {
     let idQuestion = req.params.id;
     let body = req.body;
 
@@ -69,7 +73,7 @@ app.put('/question/:id', [isAuth], (req, res) => {
 });
 
 //Questions PUT for Images
-app.put('/question/images/:imageName', [isAuth], (req, res) => {
+app.put('/question/images/:imageName', isAuth, (req, res) => {
     let requestFiles = [];
     let imageName = req.params.imageName;
     let body;
@@ -121,7 +125,7 @@ app.put('/question/images/:imageName', [isAuth], (req, res) => {
 });
 
 //Questions DELETE
-app.delete('/question/:id', [isAuth], (req, res) => {
+app.delete('/question/:id', isAuth, (req, res) => {
     let idQuestion = req.params.id;
     let imagesArray = [];
     Question.findByIdAndRemove({ _id: idQuestion }, (err, deleteQuestion) => {

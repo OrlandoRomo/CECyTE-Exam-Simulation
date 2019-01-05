@@ -3,11 +3,12 @@ const app = express();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const { isAuth } = require('../middlewares/auth');
 
 // User GET Method
 app.get('/user/:id', (req, res) => {
-    let id = req.params.id;
-    User.findById(id, (err, userFound) => {
+    let idUser = req.params.id;
+    User.findById(idUser, (err, userFound) => {
         if (err) return res.status(500).json({
             ok: false,
             err
@@ -40,45 +41,37 @@ app.post('/user', (req, res) => {
             ok: false,
             err
         });
-        res.json({
+        return res.json({
             ok: true,
             user: newUser
         })
     });
-
-
 });
 
-
-//Login User
-app.post('/loginUser', (req, res) => {
+//User PUT method
+app.put('/user/:id', isAuth, (req, res) => {
+    let idUser = req.params.id;
     let body = req.body;
-    console.log('\n', body);
-    User.findOne({ email: body.email }).exec((err, userFound) => {
+    //Hashing the new password
+    body.password = bcrypt.hashSync(body.password, 10);
+    User.findByIdAndUpdate(idUser, body, { new: true, runValidators: true, context: 'query' }, (err, updateUser) => {
         if (err) return res.status(500).json({
             ok: false,
             err
         });
-        if (!userFound) return res.status(400).json({
+        if (!updateUser) return res.status(400).json({
             ok: false,
             err: {
-                message: 'Correo o contraseña incorrecta'
+                message: 'El usuario no existe'
             }
         });
-        if (!bcrypt.compareSync(body.password, userFound.password)) return res.status(400).json({
-            ok: false,
-            err: {
-                message: 'Correo o contraseña incorrecta'
-            }
-        });
-        let token = jwt.sign({
-            user: userFound
-        }, process.env.SEED_TOKEN, { expiresIn: process.env.EXPIRATION_TOKEN });
-        res.status(200).json({
+        return res.status(200).json({
             ok: true,
-            token
+            updateUser
         });
     });
 });
+
+
 
 module.exports = app;

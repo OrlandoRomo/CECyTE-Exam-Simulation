@@ -27,7 +27,7 @@ app.post('/loginManager', (req, res) => {
         let token = jwt.sign({
             person: managerFound
         }, process.env.SEED_TOKEN, { expiresIn: process.env.EXPIRATION_TOKEN });
-        res.json({
+        res.status(200).json({
             ok: true,
             person: managerFound,
             token

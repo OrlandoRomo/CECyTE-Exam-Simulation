@@ -60,7 +60,7 @@ app.post('/manager', (req, res) => {
             ok: false,
             err
         });
-        res.json({
+        res.status(200).json({
             ok: true,
             user: newManager
         })

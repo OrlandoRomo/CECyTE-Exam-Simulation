@@ -9,9 +9,9 @@ const fs = require('fs');
 //Call fileUpload Middleware
 app.use(fileUpload());
 
-//Questions GET
+//Questions GET for IONIC
 app.get('/question', isAuth, (req, res) => {
-    Question.findRandom({}, 'questionDescription options imgs correctOption', (err, questionsDB) => {
+    Question.findRandom({}, 'questionDescription options imgs correctOption', { limit: 20 }, (err, questionsDB) => {
         if (err) return res.status(500).json({
             ok: false,
             err
@@ -21,7 +21,20 @@ app.get('/question', isAuth, (req, res) => {
             questionsDB
         })
     });
-})
+});
+
+app.get('/questions', isAuth, (req, res) => {
+    Question.find().populate('category', 'nameCategory').exec((err, questionsDB) => {
+        if (err) return res.status(500).json({
+            ok: false,
+            err
+        })
+        return res.status(200).json({
+            ok: true,
+            questionsDB
+        })
+    });
+});
 
 //Questions POST Method
 app.post('/question', isAuth, (req, res) => {
@@ -29,6 +42,8 @@ app.post('/question', isAuth, (req, res) => {
     let body = req.body;
     if (req.files !== null) {
         requestFiles = req.files.images;
+        console.log(requestFiles);
+
         //Converting the Object req.files to Array and passing by reference requestFiles
         body['imgs'] = convertObjectToArray(req, requestFiles);
     }

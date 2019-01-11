@@ -9,8 +9,8 @@ const random = require('mongoose-simple-random');
 
 let questionSchema = new Schema({
     questionDescription: { type: String, required: [true, 'La pregunta es necesaria'], unique: true },
-    options: [{ type: String }],
-    correctOption: { type: String },
+    options: [{ type: String, unique: false }],
+    correctOption: { type: String, unique: false },
     manager: { type: Schema.Types.ObjectId, ref: 'Manager' },
     category: { type: Schema.Types.ObjectId, ref: 'Category' },
     imgs: [{ type: String, require: false }]

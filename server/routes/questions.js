@@ -2,13 +2,19 @@ const express = require('express');
 const app = express();
 const Question = require('../models/question');
 let { isAuth } = require('../middlewares/auth');
-const fileUpload = require('express-fileupload');
+const multipar = require('connect-multiparty');
+const multiparMiddleware = multipar();
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('cloudinary');
 
-//Call fileUpload Middleware
-app.use(fileUpload());
 
+//Set Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET
+});
 //Questions GET for IONIC
 app.get('/question', isAuth, (req, res) => {
     Question.findRandom({}, 'questionDescription options imgs correctOption', { limit: 20 }, (err, questionsDB) => {
@@ -37,31 +43,40 @@ app.get('/questions', isAuth, (req, res) => {
 });
 
 //Questions POST Method
-app.post('/question', isAuth, (req, res) => {
+app.post('/question', [isAuth, multiparMiddleware], (req, res) => {
     let requestFiles = [];
+    let urlCloudinary = [];
+    let counter = 0;
     let body = req.body;
     if (req.files !== null) {
-        requestFiles = req.files.images;
-        console.log(requestFiles);
-
         //Converting the Object req.files to Array and passing by reference requestFiles
         body['imgs'] = convertObjectToArray(req, requestFiles);
-    }
-    let question = new Question(body);
-    question.save((err, newQuestion) => {
-        saveImagesServer(requestFiles, req, res)
-        if (err) {
-            deleteImagesServer(requestFiles, req);
-            return res.status(500).json({
-                ok: false,
-                err
+        for (let i = 0; i < body['imgs'].length; i++) {
+            cloudinary.uploader.upload(body.imgs[i], function(result, err) {
+
+                counter++;
+                urlCloudinary.push(result.url);
+                if (counter === body['imgs'].length) {
+                    body['imgs'] = urlCloudinary;
+                    let question = new Question(body);
+                    question.save((err, newQuestion) => {
+                        if (err) {
+                            return res.status(500).json({
+                                ok: false,
+                                err
+                            });
+                        }
+                        return res.status(200).json({
+                            ok: true,
+                            question: newQuestion
+                        })
+                    });
+                }
+
             });
         }
-        return res.status(200).json({
-            ok: true,
-            question: newQuestion
-        })
-    });
+    }
+
 });
 
 //Questions PUT except the images for the question
@@ -77,7 +92,7 @@ app.put('/question/:id', isAuth, (req, res) => {
         if (!updateQuestion) return res.status(400).json({
             ok: false,
             err: {
-                message: 'La pregunta no existe'
+                message: 'La pregunta no existe.'
             }
         });
         return res.status(200).json({
@@ -139,6 +154,28 @@ app.put('/question/images/:imageName', isAuth, (req, res) => {
     });
 });
 
+//Questions GET for Images
+app.get('/question/images/:id', isAuth, (req, res) => {
+    let idQuestion = req.params.id;
+    let imagesArray = [];
+    Question.findOne({ _id: idQuestion }, (err, imagesDB) => {
+        if (err) return res.status(500).json({
+            ok: false,
+            err
+        });
+        if (!imagesDB) return res.status(401).json({
+            ok: false,
+            message: 'La pregunta no existe.'
+        });
+        if (imagesDB.imgs === null) {
+            return res.status(200).json({
+                message: 'No hay imágenes de la pregunta.'
+            });
+        }
+        //Here is the cloudinary GET
+    });
+});
+
 //Questions DELETE
 app.delete('/question/:id', isAuth, (req, res) => {
     let idQuestion = req.params.id;
@@ -177,7 +214,7 @@ function convertObjectToArray(req, requestFiles) {
     if (Object.keys(req.files).length !== 0) {
         requestFiles = [].concat(req.files.images);
         for (let i = 0; i < requestFiles.length; i++)
-            imagesArray.push(requestFiles[i]['name']);
+            imagesArray.push(requestFiles[i]['path']);
     }
     return imagesArray;
 }

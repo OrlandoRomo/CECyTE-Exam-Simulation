@@ -36,7 +36,6 @@ app.get('/manager/users/:something', isAuth, (req, res) => {
             if (err) return res.status(500).json({
                 ok: false,
                 err,
-                message: 'asdfasdfh'
             });
             return res.status(200).json({
                 ok: true,

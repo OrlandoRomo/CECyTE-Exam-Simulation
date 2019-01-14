@@ -11,8 +11,12 @@ app.get('/test/:id', isAuth, (req, res) => {
         .exec((err, testsDB) => {
             if (err) return res.status(500).json({
                 ok: false,
-                err
-            })
+                message: 'No es pudo conectar con el servidor, inténtalo más tarde.'
+            });
+            if (Object.keys(testsDB).length === 0) return res.status(400).json({
+                ok: false,
+                message: 'El usuario no ha hecho ningún test.'
+            });
             return res.status(200).json({
                 ok: true,
                 testsDB

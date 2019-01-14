@@ -46,21 +46,45 @@ app.get('/questions', isAuth, (req, res) => {
 app.post('/question', [isAuth, multiparMiddleware], (req, res) => {
     let requestFiles = [];
     let urlCloudinary = [];
+    let imagesNameArray = [];
     let counter = 0;
     let body = req.body;
-    if (req.files !== null) {
+    if (Object.keys(req.files).length === 0) {
+        let question = new Question(body);
+        question.save((err, newQuestion) => {
+            if (err) {
+                return res.status(500).json({
+                    ok: false,
+                    err
+                });
+            }
+            return res.status(200).json({
+                ok: true,
+                question: newQuestion
+            })
+        });
+    } else {
         //Converting the Object req.files to Array and passing by reference requestFiles
         body['imgs'] = convertObjectToArray(req, requestFiles);
+        imagesNameArray = getImagesName(req, requestFiles);
         for (let i = 0; i < body['imgs'].length; i++) {
-            cloudinary.uploader.upload(body.imgs[i], function(result, err) {
 
+            cloudinary.uploader.upload(body.imgs[i], function(result) {
+                if (result.error) {
+                    deleteImagesServer(body.imgs);
+                    return res.status(500).json({
+                        ok: false,
+                        message: 'No se pudo conectar con el servidor, inténtelo más tarde.'
+                    });
+                }
                 counter++;
                 urlCloudinary.push(result.url);
                 if (counter === body['imgs'].length) {
-                    body['imgs'] = urlCloudinary;
+                    body['imgs'] = urlCloudinary
                     let question = new Question(body);
                     question.save((err, newQuestion) => {
                         if (err) {
+                            deleteImagesCloudinary(imagesNameArray);
                             return res.status(500).json({
                                 ok: false,
                                 err
@@ -73,10 +97,9 @@ app.post('/question', [isAuth, multiparMiddleware], (req, res) => {
                     });
                 }
 
-            });
+            }, { public_id: `${imagesNameArray[i]}` });
         }
     }
-
 });
 
 //Questions PUT except the images for the question
@@ -101,7 +124,6 @@ app.put('/question/:id', isAuth, (req, res) => {
         });
     });
 });
-
 //Questions PUT for Images
 app.put('/question/images/:imageName', isAuth, (req, res) => {
     let requestFiles = [];
@@ -219,31 +241,31 @@ function convertObjectToArray(req, requestFiles) {
     return imagesArray;
 }
 
-//Function that saves the files in the server after recording data in mongodb
-function saveImagesServer(requestFiles, req, res) {
-
-    if (req.files !== null) {
+//Function that gets the images name
+function getImagesName(req, requestFiles) {
+    let imagesArray = [];
+    //If exists images then the for will put the array the images's name
+    if (Object.keys(req.files).length !== 0) {
         requestFiles = [].concat(req.files.images);
-        for (let i = 0; i < requestFiles.length; i++) {
-            let newImageName = requestFiles[i]['name'];
-            requestFiles[i].mv(`uploads/questions/${newImageName}`, (err) => {
-                return res.status(500).end();
-            });
-        }
-    } else return;
+        for (let i = 0; i < requestFiles.length; i++)
+            imagesArray.push(requestFiles[i]['name']);
+    }
+    return imagesArray;
 }
 
+function deleteImagesCloudinary(urlCloudinary) {
+    urlCloudinary.forEach((url) => {
+        cloudinary.uploader.destroy(url, function(result, err) {
+            console.log(result);
+        });
+    });
+}
 //Function that deletes the images in the server if there is an error saving a question
-function deleteImagesServer(requestFiles, req) {
-    if (req.files !== null) {
-        requestFiles = [].concat(req.files.images);
-        for (let i = 0; i < requestFiles.length; i++) {
-            let imageName = requestFiles[i]['name'];
-            let pathImageURL = path.resolve(__dirname, `../../uploads/questions/${imageName}`);
-            if (fs.existsSync(pathImageURL)) {
-                fs.unlinkSync(pathImageURL);
-            }
+function deleteImagesServer(tmpUrl) {
+    tmpUrl.forEach((url) => {
+        if (fs.existsSync(url)) {
+            fs.unlinkSync(url);
         }
-    }
+    });
 }
 module.exports = app;

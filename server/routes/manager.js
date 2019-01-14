@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const jwt = require('jsonwebtoken');
 const Manager = require('../models/manager');
-const Test = require('../models/test');
+const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 const { isAuth } = require('../middlewares/auth')
@@ -29,20 +29,19 @@ app.get('/manager/:id', isAuth, (req, res) => {
 });
 
 //Manager GET method for all users
-app.get('/manager/users/:something', isAuth, (req, res) => {
-    Test.find({})
-        .populate('user', 'name lastName grade group')
-        .exec((err, testsDB) => {
-            if (err) return res.status(500).json({
-                ok: false,
-                err,
-            });
-            return res.status(200).json({
-                ok: true,
-                testsDB
-            });
-        })
+app.get('/manager/users/all', isAuth, (req, res) => {
+    User.find({}).exec((err, usersDB) => {
+        if (err) return res.status(500).json({
+            ok: false,
+            err
+        });
+        return res.status(200).json({
+            ok: true,
+            usersDB
+        });
+    });
 });
+
 //User POST method
 app.post('/manager', (req, res) => {
     let body = req.body;

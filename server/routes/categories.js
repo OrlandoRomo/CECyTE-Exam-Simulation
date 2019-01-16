@@ -5,7 +5,7 @@ let { isAuth } = require('../middlewares/auth');
 
 //Categories GET Method
 app.get('/category', isAuth, (req, res) => {
-    Category.find({}, (err, categoriesDB) => {
+    Category.find({ enable: true }, (err, categoriesDB) => {
         if (err) return res.status(500).json({
             ok: false,
             err
@@ -77,7 +77,7 @@ app.put('/category/:id', isAuth, (req, res) => {
 //Categories DELETE Method
 app.delete('/category/:id', isAuth, (req, res) => {
     let idCategory = req.params.id;
-    Category.findByIdAndRemove({ _id: idCategory }, (err, deleteCategory) => {
+    Category.findByIdAndUpdate({ _id: idCategory }, { enable: false }, (err, deleteCategory) => {
         if (err) return res.status(500).json({
             ok: false,
             err
@@ -107,6 +107,5 @@ app.delete('/category', isAuth, (req, res) => {
         });
     })
 });
-
 
 module.exports = app;

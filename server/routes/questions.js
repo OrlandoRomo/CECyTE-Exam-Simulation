@@ -70,8 +70,8 @@ app.post('/question', [isAuth, multiparMiddleware], (req, res) => {
         for (let i = 0; i < body['imgs'].length; i++) {
 
             cloudinary.uploader.upload(body.imgs[i], function(result) {
+                deleteImagesServer(body.imgs);
                 if (result.error) {
-                    deleteImagesServer(body.imgs);
                     return res.status(500).json({
                         ok: false,
                         message: 'No se pudo conectar con el servidor, inténtelo más tarde.'
@@ -202,30 +202,45 @@ app.get('/question/images/:id', isAuth, (req, res) => {
 app.delete('/question/:id', isAuth, (req, res) => {
     let idQuestion = req.params.id;
     let imagesArray = [];
-    Question.findByIdAndRemove({ _id: idQuestion }, (err, deleteQuestion) => {
+    let urlPublicId = [];
+    Question.findOne({ _id: idQuestion }).exec((err, findQuestion) => {
         if (err) return res.status(500).json({
             ok: false,
             err
         });
-        if (!deleteQuestion) return res.status(400).json({
+        if (!findQuestion) return res.status(400).json({
             ok: false,
             err: {
                 message: 'La pregunta no existe'
             }
         });
-        if (deleteQuestion.imgs !== null) {
-            deleteQuestion.imgs.forEach((image, index) => {
-                let pathImageURL = path.resolve(__dirname, `../../uploads/questions/${image}`);
-                if (fs.existsSync(pathImageURL))
-                    fs.unlinkSync(pathImageURL);
+        if (findQuestion.imgs.length === 0) {
+            Question.findByIdAndRemove({ _id: idQuestion }, (err, deleteQuestion) => {
+                if (err) return res.status(500).json({
+                    ok: false,
+                    err
+                });
+                return res.status(200).json({
+                    ok: true,
+                    deleteQuestion
+                })
+            });
+        } else {
+            for (let i = 0; i < findQuestion.imgs.length; i++) {
+                urlPublicId.push(getPublicIdAndDelete(findQuestion.imgs[i]));
+                cloudinary.uploader.destroy(urlPublicId[i], function(result, error) {});
+            }
+            Question.findByIdAndRemove({ _id: idQuestion }, (err, deleteQuestion) => {
+                if (err) return res.status(500).json({
+                    ok: false,
+                    err
+                });
+                return res.status(200).json({
+                    ok: true,
+                    deleteQuestion
+                })
             });
         }
-        return res.status(200).json({
-            ok: true,
-            deleteQuestion,
-            message: 'Pregunta eliminada correctamente.'
-        })
-
     });
 });
 
@@ -240,7 +255,6 @@ function convertObjectToArray(req, requestFiles) {
     }
     return imagesArray;
 }
-
 //Function that gets the images name
 function getImagesName(req, requestFiles) {
     let imagesArray = [];
@@ -252,13 +266,26 @@ function getImagesName(req, requestFiles) {
     }
     return imagesArray;
 }
-
+// Function that deletes the images in cloudinary by public_id url
 function deleteImagesCloudinary(urlCloudinary) {
     urlCloudinary.forEach((url) => {
-        cloudinary.uploader.destroy(url, function(result, err) {
+        cloudinary.uploader.destroy(url, function(result) {
             console.log(result);
         });
     });
+}
+
+//Function that gets the public_id in the cloudinary url
+function getPublicIdAndDelete(imgsPublicId) {
+    let extentionsArray = ['.jpg', '.png', '.jpeg'];
+    let filename = imgsPublicId.split('/').pop();
+    let extentionMatch;
+    extentionsArray.every(extentions => {
+        extentionMatch = extentions;
+        return !filename.includes(extentions);
+    });
+    filename = filename.substr(0, filename.lastIndexOf(extentionMatch));
+    return filename;
 }
 //Function that deletes the images in the server if there is an error saving a question
 function deleteImagesServer(tmpUrl) {

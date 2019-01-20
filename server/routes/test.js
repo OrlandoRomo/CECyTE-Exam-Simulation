@@ -24,6 +24,20 @@ app.get('/test/:id', isAuth, (req, res) => {
         })
 });
 
+app.get('/tests/done/:id', isAuth, (req, res) => {
+    let id = req.params.id;
+    Test.countDocuments({ user: id }, (err, count) => {
+        if (err) return res.status(500).json({
+            ok: false,
+            err
+        });
+        return res.status(200).json({
+            ok: true,
+            count
+        })
+    });
+});
+
 //Test POST Method
 app.post('/test', isAuth, (req, res) => {
     let body = req.body

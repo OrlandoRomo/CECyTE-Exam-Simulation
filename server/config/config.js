@@ -15,7 +15,7 @@ else
 process.env.URL_DB = urlDB;
 
 //ExpiresIn and Seed
-process.env.EXPIRATION_TOKEN = '48h';
+process.env.EXPIRATION_TOKEN = '4320h';
 process.env.SEED_TOKEN = process.env.SEED_TOKEN || 'cecytea-test-simulation';
 
 //Cloudinary Configuration
